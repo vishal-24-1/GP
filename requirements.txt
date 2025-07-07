@@ -1,0 +1,10 @@
+Django>=5.2,<6.0
+psycopg2-binary>=2.9
+python-dotenv
+django-cors-headers
+gunicorn
+# Optional, for production static files
+whitenoise
+# If you use djangorestframework
+djangorestframework
+# If you use any other packages, add them below

@@ -25,7 +25,12 @@ SECRET_KEY = "django-insecure-g+3v2d#5=b3!$))uga#yrjca*al@@j%4t1=#6c2gv=rc316%h&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "3.92.187.197",
+    "ec2-3-92-187-197.compute-1.amazonaws.com",
+    "localhost"
+    
+]
 
 
 # Application definition
@@ -82,10 +87,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'excel_db',
-        'USER': 'postgres',
+        'USER': 'admin',
         'PASSWORD': 'postgre',
         'HOST': 'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 
@@ -124,10 +129,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://192.168.56.1:3000",
+]
