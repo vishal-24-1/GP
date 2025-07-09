@@ -1,27 +1,48 @@
-// api.tsx (assuming you meant App.tsx as the main routing file)
-import React from "react";
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";// Make sure this path is correct if you renamed it
-import Testpage from "./pages/Testpage";
-import Upload from "./pages/Upload"; // Import the Upload component
-const App: React.FC = () => {
+import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { FilterProvider } from '@/lib/DashboardFilterContext';
+import Layout from './dashboard/components/Layout/Layout';
+import {
+  Section1Dashboard,
+  IndividualQuestions,
+  Performancetab,
+  PerformanceInsights,
+  Upload,
+  Login,
+  Register
+} from './dashboard/pages/index.tsx';
+import { useAuth } from './context/AuthContext';
+
+function App() {
   return (
     <Router>
-      <div style={{ padding: 20 }}>
-        <nav> {/* <-- THIS WAS THE FIX: Changed to /charts */}
-          <Link to="/test">View Test</Link>
-        </nav>
-        <nav> {/* <-- THIS WAS THE FIX: Changed to /charts */}
-          <Link to="/upload">Click to upload</Link>
-        </nav>
-        <hr />
-        <Routes>
-          <Route path="/test" element={<Testpage />} />
-          <Route path="/" element={<Upload />} />
-        </Routes>
-      </div>
+      <AuthProvider>
+        <FilterProvider>
+          <Routes>
+            <Route path="/auth" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+              <Route index element={<Section1Dashboard />} />
+              <Route path="individual-questions" element={<IndividualQuestions />} />
+              <Route path="performance" element={<Performancetab />} />
+              <Route path="upload" element={<Upload />} />
+              <Route path="performance-insights" element={<PerformanceInsights />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/auth" replace />} />
+          </Routes>
+        </FilterProvider>
+      </AuthProvider>
     </Router>
   );
-};
+}
+
+function PrivateRoute({ children }: { children: React.ReactElement }) {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+  return children;
+}
 
 export default App;
-
