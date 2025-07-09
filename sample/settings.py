@@ -11,30 +11,54 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import environ # Import the environ library
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Initialize django-environ
+# Define the environment variables and their default values.
+# The default values here are primarily for your LOCAL DEVELOPMENT setup.
+# In production, you will OVERRIDE these defaults by setting actual
+# environment variables on your EC2 server.
+env = environ.Env(
+    # Core Django settings
+    DEBUG=(bool, True), # Default: True (for local development)
+    SECRET_KEY=(str, "django-insecure-g+3v2d#5=b3!$))uga#yrjca*al@@j%4t1=#6c2gv=rc316%h&"), # Default: Your local dev secret key
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+    # Database settings (local development defaults)
+    DATABASE_NAME=(str, 'excel_db_dev'), # Default: Name for your local DB
+    DATABASE_USER=(str, 'postgres'),     # Default: User for your local DB
+    DATABASE_PASSWORD=(str, 'postgre'),  # Default: Password for your local DB
+    DATABASE_HOST=(str, 'localhost'),    # Default: Host for your local DB
+    DATABASE_PORT=(str, '5433'),         # Default: Port for your local DB
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-g+3v2d#5=b3!$))uga#yrjca*al@@j%4t1=#6c2gv=rc316%h&"
+    # Allowed Hosts (local development defaults)
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+    # CORS Allowed Origins (local development defaults)
+    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000", "http://192.168.56.1:3000"]),
+)
 
-ALLOWED_HOSTS = [
-    "3.92.187.197",
-    "ec2-3-92-187-197.compute-1.amazonaws.com",
-    "localhost"
-    
-]
+# Read environment variables from a .env file (if it exists).
+# This is mainly for local development, so you don't have to set variables
+# in your shell every time. The .env file should be in your project root.
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
-# Application definition
+# --- Core Django Settings (read from environment or use defaults) ---
+# SECRET_KEY is crucial for security. ALWAYS override in production.
+SECRET_KEY = env('SECRET_KEY')
 
+# DEBUG mode. Set to False in production.
+DEBUG = env('DEBUG')
+
+# ALLOWED_HOSTS for your Django application.
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+
+
+# --- Application definition ---
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -42,7 +66,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Third-party
+    # Third-party apps
     "rest_framework",
     "corsheaders",
     # Local app
@@ -80,24 +104,20 @@ TEMPLATES = [
 WSGI_APPLICATION = "sample.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# --- Database settings (read from environment or use defaults) ---
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'excel_db',
-        'USER': 'admin',
-        'PASSWORD': 'postgre',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': env('DATABASE_NAME'),
+        'USER': env('DATABASE_USER'),
+        'PASSWORD': env('DATABASE_PASSWORD'),
+        'HOST': env('DATABASE_HOST'),
+        'PORT': env('DATABASE_PORT'),
     }
 }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
+# --- Password validation ---
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -114,29 +134,22 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
+# --- Internationalization ---
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
+# --- Static files (CSS, JavaScript, Images) ---
 STATIC_URL = "/static/"
+# In production, you'll likely need STATIC_ROOT for collectstatic
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
+# --- Default primary key field type ---
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://192.168.56.1:3000",
-]
+
+# --- CORS Headers settings (read from environment or use defaults) ---
+CORS_ALLOW_ALL_ORIGINS = False # Keep this False in production!
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS')
