@@ -372,6 +372,7 @@ def get_dashboard_all_metrics(request):
         # 4. Trend graph
         trend_response = get_trend_graph(request)
         trend_data = json.loads(trend_response.content)
+        
         # 5. Overall performance
         overall_response = get_overall_performance(request)
         overall_data = json.loads(overall_response.content)

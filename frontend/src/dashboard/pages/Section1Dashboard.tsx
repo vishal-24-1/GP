@@ -9,16 +9,11 @@ import DashboardCard from "@/components/ui/DashboardCard";
 import DataTable, { type TableRow } from "../components/tables/DataTable";
 import { BarChart2, PercentCircle, Star, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import PageContainer from "@/components/layout/PageContainer";
-
-// --- MOCK DATA GENERATION ---
-// All mock data and generator functions have been moved to DummyData/Section1DashboardData.ts
-import { fetchScores } from "@/DummyData/Section1DashboardData";
+import { fetchDashboardAllMetrics } from "@/api/dashboard.api";
 
 export default function Section1Dashboard() {
-  // Define dropdown options at the very top, before any logic uses them
   const institutionOptions = ["Institution 1", "Institution 2"];
   const batchOptions = ["Batch A", "Batch B"];
-  // Remove "All Classes" and use "All Sections" + 4 specific sections
   const sectionOptions = [ "11A", "11B", "12A", "12B"];
 
   const { filter } = useFilter();
@@ -26,17 +21,15 @@ export default function Section1Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- DYNAMIC DATA FETCH ---
   useEffect(() => {
     setLoading(true);
     setError(null);
-    // Set default filter values if missing
     const defaultInstitution = filter.institution || institutionOptions[0];
     const defaultBatch = filter.batch || batchOptions[0];
     const defaultSection = filter.class || sectionOptions[0];
     const defaultExamType = filter.examType || "Weekly";
     const defaultSubject = filter.subject || "Physics";
-    fetchScores({
+    fetchDashboardAllMetrics({
       institution: defaultInstitution,
       batch: defaultBatch,
       section: defaultSection,
@@ -52,74 +45,37 @@ export default function Section1Dashboard() {
   if (error) return <div>{error}</div>;
   if (!dashboardData) return null;
 
-  // Determine max marks based on exam type
-  const getMaxMarks = () => {
-    if (filter.examType === "Weekly") return 120;
-    if (filter.examType === "Cumulative") return 400;
-    if (filter.examType === "Grand Test" || filter.examType === "NEET") return 720;
-    return 0;
-  };
-  const maxMarks = getMaxMarks();
+  // Extract metrics from backend response
+  const metrics = dashboardData.metrics || {};
+  const neetReadiness = dashboardData.neet_readiness || {};
+  const riskBreakdown = dashboardData.risk_breakdown || {};
+  const trendGraph = dashboardData.trend_graph || [];
+  const overallPerformance = dashboardData.overall_performance || [];
 
-  // Use sanitized values for all metrics
-  const avgTotalScore = Math.round(dashboardData.avgTotalScore);
-  const top10PercentAvgScore = Math.round(dashboardData.top10PercentAvgScore);
-  const bottom10PercentAvgScore = Math.round(dashboardData.bottom10PercentAvgScore);
-  // --- TOP 10 PERFORMERS LOGIC ---
-  let top10Performers: any[] = [];
-  if (!filter.class || filter.class === "All Sections") {
-    top10Performers = dashboardData.top10Performers
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
-      .map(s => ({ ...s, score: Math.round(s.score) }));
-  } else {
-    top10Performers = dashboardData.top10Performers
-      .filter(s => s.section === filter.class)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
-      .map(s => ({ ...s, score: Math.round(s.score) }));
-  }
-  // If no performers found, fallback to all top10 from all sections
-  if (top10Performers.length === 0 && dashboardData.top10StudentsByClass) {
-    // Flatten all top10 lists and take top 10 overall
-    const allTop = Object.values(dashboardData.top10StudentsByClass).flat();
-    top10Performers = allTop
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
-      .map(s => ({ ...s, class: s.section, score: Math.round(s.score) })); // Ensure 'class' property exists
-  }
+  // Determine max marks from metrics (if available)
+  const maxMarks = metrics.average_total_score?.split("/")[1]?.trim() || "0";
+  const avgTotalScore = parseFloat(metrics.average_total_score?.split("/")[0]?.trim() || "0");
+  const top10PercentAvgScore = parseFloat(metrics.top_10_avg_score?.split("/")[0]?.trim() || "0");
+  const bottom10PercentAvgScore = parseFloat(metrics.bottom_10_avg_score?.split("/")[0]?.trim() || "0");
 
-  // --- RISK BREAKDOWN MODAL/EXPANDABLE ---
+  // Risk breakdown
   const riskData = [
-    { name: "High Risk", value: dashboardData.riskBreakdown.highRiskPercentage, color: "#ef4444" },
-    { name: "Medium Risk", value: dashboardData.riskBreakdown.mediumRiskPercentage, color: "#f59e42" },
-    { name: "Safe", value: dashboardData.riskBreakdown.safePercentage, color: "#10b981" },
+    { name: "Safe", value: riskBreakdown.safe?.percentage || 0, color: "#10b981" },
+    { name: "Medium Risk", value: riskBreakdown.medium_risk?.percentage || 0, color: "#f59e42" },
+    { name: "At Risk", value: riskBreakdown.at_risk?.percentage || 0, color: "#ef4444" },
   ];
-
-  // --- PERFORMANCE TREND LOGIC ---
-  let trendData: { month: string; score: number }[] = [];
-  let trendSubject: string = filter.subject || "Physics";
-  // Always fallback to Physics if subject not found
-  if (filter.examType === "Weekly") {
-    trendData = dashboardData.performanceTrend.weekly[trendSubject] || dashboardData.performanceTrend.weekly["Physics"];
-  } else if (filter.examType === "Cumulative") {
-    trendData = dashboardData.performanceTrend.cumulative[trendSubject] || dashboardData.performanceTrend.cumulative["Physics"];
-  } else if (filter.examType === "Grand Test") {
-    trendData = dashboardData.performanceTrend.grandTest.overall;
-    trendSubject = "";
-  }
 
   // Metric cards config for dashboard
   const metricCards = [
     {
       icon: <BarChart2 className="w-9 h-9 text-blue-600" />, // Total Tests
       label: 'Total Tests Conducted',
-      value: dashboardData.totalTestConducted,
+      value: metrics.total_tests_conducted,
     },
     {
       icon: <PercentCircle className="w-9 h-9 text-blue-600" />, // Accuracy
       label: 'Average Accuracy %',
-      value: `${dashboardData.avgAccuracyPercentage.toFixed(1)}%`,
+      value: `${metrics.average_accuracy_percent?.toFixed(1)}%`,
     },
     {
       icon: <Star className="w-9 h-9 text-blue-600" />, // Total Score
@@ -129,7 +85,7 @@ export default function Section1Dashboard() {
     {
       icon: <TrendingUp className="w-9 h-9 text-blue-600" />, // Attempt Rate
       label: 'Average Attempt Rate (%)',
-      value: dashboardData.avgAttemptRatePercentage.toFixed(1),
+      value: metrics.average_attempt_rate_percent?.toFixed(1),
     },
     {
       icon: <ArrowUpRight className="w-9 h-9 text-blue-600" />, // Top 10%
@@ -143,17 +99,19 @@ export default function Section1Dashboard() {
     },
   ];
 
+  // Top 10 performers
+  const top10Performers = overallPerformance.map((perf: any, i: number) => ({
+    id: i + 1,
+    name: perf.name,
+    section: perf.section,
+    score: perf.overall_score,
+  }));
+
   return (
     <PageContainer>
       <div className="space-y-12 w-full">
-        {/* Section: Filters */}
-        {/* <div className="bg-white/80 rounded-2xl shadow-lg border border-blue-100 px-6 py-5 mb-2"> */}
-          <FilterBar institutions={institutionOptions} batches={batchOptions} classes={sectionOptions} />
-        {/* </div> */}
-
-        {/* --- PERFORMANCE ANALYTICS SECTION --- */}
+        <FilterBar institutions={institutionOptions} batches={batchOptions} classes={sectionOptions} />
         <section className="mb-12">
-          {/* Row 1 & 2: Metric Cards in two rows */}
           <div className="w-full flex flex-col gap-0 shadow-lg rounded-2xl overflow-hidden mb-12">
             <div className="flex flex-row w-full">
               {metricCards.slice(0, 3).map((card, idx) => (
@@ -204,43 +162,32 @@ export default function Section1Dashboard() {
               ))}
             </div>
           </div>
-
-          {/* Row 2: Main Visuals Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {/* Left: Score Distribution + KPI Cards */}
             <div className="md:col-span-1 flex flex-col gap-6">
-              {/* Average Total Score Card - improved layout */}
               <div className="w-full border border-blue-100 rounded-2xl p-6 bg-white/90 shadow-md flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-lg font-bold text-blue-900">Average Total Score</span>
                   <span className="ml-2 px-3 py-2 text-xs rounded-lg border border-blue-200 bg-blue-50 text-blue-700 font-semibold">Max: {maxMarks}</span>
                 </div>
                 <div className="flex flex-col items-center justify-center h-[320px]">
-                  <AverageTotalScoreGauge avgScore={avgTotalScore} maxMarks={maxMarks} />
-                  {/* <span className="mt-4 text-2xl font-extrabold text-blue-700">{avgTotalScore} <span className="text-base font-medium text-slate-500">/ {maxMarks}</span></span> */}
+                  <AverageTotalScoreGauge avgScore={avgTotalScore} maxMarks={parseFloat(maxMarks)} />
                 </div>
               </div>
             </div>
-
-             {/* Right: NEET Readiness + Performance Trend */}
             <div className="flex flex-col gap-6 md:col-span-1">
-              {/* NEET Readiness Card */}
               <div className="bg-white/90 rounded-2xl shadow-lg border border-blue-100 px-8 py-6 flex flex-col items-center w-full">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xl font-bold text-blue-900">NEET Readiness</span>
                 </div>
                 <span className="text-5xl font-extrabold text-emerald-600 mb-1">
-                  {dashboardData.neetReadiness.overallPercentage.toFixed(1)}%
+                  {neetReadiness.percentage_students_above_400?.toFixed(1)}%
                 </span>
-                <span className="text-sm text-slate-500 font-medium">% students scoring ≥ 75% of max marks</span>
+                <span className="text-sm text-slate-500 font-medium">% students scoring ≥ 400</span>
               </div>
-              {/* Performance Trend Card */}
               <div>
-                <PerformanceTrendBarChart trendData={trendData} maxMarks={maxMarks} subject={trendSubject} />
+                <PerformanceTrendBarChart trendData={trendGraph} maxMarks={parseFloat(maxMarks)} subject={filter.subject || "Physics"} />
               </div>
             </div>
-
-            {/* Center: Risk Breakdown Pie + KPI Cards */}
             <div className="md:col-span-1 flex flex-col gap-6">
               <div className="w-full border border-red-100 rounded-2xl p-6 bg-white/90 shadow-md flex flex-col">
                 <div className="flex items-center justify-between mb-4">
@@ -298,63 +245,18 @@ export default function Section1Dashboard() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="flex justify-center gap-4 mt-4">
-                    <span className="flex items-center gap-1 text-xs text-red-500 font-semibold"><span className="inline-block w-3 h-3 rounded-full bg-red-400"></span> High</span>
+                    <span className="flex items-center gap-1 text-xs text-red-500 font-semibold"><span className="inline-block w-3 h-3 rounded-full bg-red-400"></span> At Risk</span>
                     <span className="flex items-center gap-1 text-xs text-orange-400 font-semibold"><span className="inline-block w-3 h-3 rounded-full bg-orange-400"></span> Medium</span>
                     <span className="flex items-center gap-1 text-xs text-emerald-500 font-semibold"><span className="inline-block w-3 h-3 rounded-full bg-emerald-400"></span> Safe</span>
                   </div>
                 </div>
               </div>
             </div>
-
-            
           </div>
         </section>
-
-        {/* Section: Performers */}
-        {/* KPI Row above the table */}
-         {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="flex items-center bg-white border border-green-200 rounded-lg px-4 py-3 shadow-sm">
-            <span className="text-xl font-bold text-emerald-600 mr-3"><CountUp end={dashboardData.improvingStudentsPercentage} decimals={1} suffix="%" /></span>
-            <span className="text-sm text-slate-600 font-medium"> of Students Improving</span>
-          </div>
-          <div className="flex items-center bg-white border border-amber-200 rounded-lg px-4 py-3 shadow-sm">
-            <span className="text-sm text-slate-600 font-medium mr-3">Most Improved Subject</span>
-            <span className="text-base font-bold text-amber-600">{dashboardData.mostImprovedSubject}</span>           
-          </div>
-          <div className="flex items-center bg-white border border-blue-200 rounded-lg px-4 py-3 shadow-sm">
-            <span className="text-sm text-slate-600 font-medium mr-3">Best Performing Section</span>
-            <span className="text-base font-bold text-blue-700 ">{dashboardData.bestPerformingClass}</span>            
-          </div>
-          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
-            <span className="text-sm text-slate-600 font-medium mr-3">Most Dropped Subject</span>
-            <span className="text-base font-bold text-slate-700">{dashboardData.mostDroppedSubject}</span>
-          </div>
-        </div> * />
-
-        {/* KPI Row above the table */}
         <div className="w-full bg-white/90 border border-blue-100 rounded-2xl shadow-lg px-6 py-4 mb-6 flex flex-col gap-2">
-          <div className="flex flex-wrap md:flex-nowrap gap-4 w-full">
-            <div className="flex-1 min-w-[180px] flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50">
-              <span className="text-2xl font-extrabold text-emerald-600">
-                {dashboardData.improvingStudentsPercentage.toFixed(1)}%
-              </span>
-              <span className="text-sm text-slate-700 font-medium">of Students Improving</span>
-            </div>
-            <div className="flex-1 min-w-[180px] flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50">
-              <span className="text-sm text-slate-700 font-medium mr-3">Most Improved Subject</span>
-              <span className="ml-auto text-base font-bold text-amber-600">{dashboardData.mostImprovedSubject}</span>
-            </div>
-            <div className="flex-1 min-w-[180px] flex items-center gap-3 px-4 py-3 rounded-xl border border-blue-200 bg-blue-50">
-              <span className="text-sm text-slate-700 font-medium mr-3">Best Performing Section</span>
-              <span className="ml-auto text-base font-bold text-blue-700">{dashboardData.bestPerformingClass}</span>
-            </div>
-            <div className="flex-1 min-w-[180px] flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50">
-              <span className="text-sm text-slate-700 font-medium mr-3">Most Dropped Subject</span>
-              <span className="ml-auto text-base font-bold text-slate-700">{dashboardData.mostDroppedSubject}</span>
-            </div>
-          </div>
+          {/* You can add additional KPIs here if available from backend */}
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <DashboardCard
             title="Top 10 Performers"
@@ -362,12 +264,7 @@ export default function Section1Dashboard() {
             content={(() => (
               <div className="w-full">
                 <DataTable
-                  rows={top10Performers.map((s, i): TableRow => ({
-                    id: i + 1,
-                    name: s.name,
-                    section: s.section,
-                    score: s.score,
-                  }))}
+                  rows={top10Performers}
                   columns={[
                     { field: "id", label: "Rank", align: "center" },
                     { field: "name", label: "Name", align: "center" },
@@ -376,7 +273,7 @@ export default function Section1Dashboard() {
                   ]}
                   renderCell={(row, col) => {
                     if (col.field === "score") {
-                      return `${row.score} / ${maxMarks}`;
+                      return row.score;
                     }
                     return row[col.field as keyof TableRow] ?? "";
                   }}
