@@ -2,7 +2,7 @@
 export { default as Section1Dashboard } from './Section1Dashboard';
 export { default as IndividualQuestions } from './IndividualQuestions';
 export { default as Performancetab } from './Performancetab';
-export { default as Upload } from './upload/upload';
+export { default as Upload } from './upload/up';
 export { default as PerformanceInsights } from './PerformanceInsights';
 export { default as Login } from './auth/login';
 export { default as Register } from './auth/register';

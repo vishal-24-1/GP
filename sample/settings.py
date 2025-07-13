@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import environ # Import the environ library
-
+import sys
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,10 +45,6 @@ env = environ.Env(
 # This is mainly for local development, so you don't have to set variables
 # in your shell every time. The .env file should be in your project root.
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
-
-# --- Core Django Settings (read from environment or use defaults) ---
-# SECRET_KEY is crucial for security. ALWAYS override in production.
 SECRET_KEY = env('SECRET_KEY')
 
 # DEBUG mode. Set to False in production.
@@ -144,7 +140,7 @@ USE_TZ = True
 # --- Static files (CSS, JavaScript, Images) ---
 STATIC_URL = "/static/"
 # In production, you'll likely need STATIC_ROOT for collectstatic
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 # --- Default primary key field type ---

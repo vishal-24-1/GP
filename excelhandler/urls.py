@@ -4,7 +4,7 @@ from .views.slicers import InstitutionListView, BatchListView, ClassListView, Se
 
 
 urlpatterns = [
-    path('load-all-data/', upload_and_process_data),
+    path('load-all-data/',upload_and_process_data),
     path('overall-performance', get_overall_performance),
     path('dashboard-all-metrics', get_dashboard_all_metrics),
     path('cards', get_dashboard_metrics),
