@@ -40,6 +40,13 @@ export default function FilterBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter.examType]);
 
+  // For institutions and batches, assign values starting from 201
+  const toOptionsWithCode = (arr: string[], labelAll?: string): DropdownOption[] => {
+    let startCode = 1;
+    const options = arr.map((v, idx) => ({ value: (startCode + idx).toString(), label: v }));
+    return labelAll ? [{ value: "All", label: labelAll }, ...options] : options;
+  };
+  // For other dropdowns, keep original
   const toOptions = (arr: string[], labelAll?: string): DropdownOption[] => [
     ...(labelAll ? [{ value: "All", label: labelAll }] : []),
     ...arr.map((v) => ({ value: v, label: v })),
@@ -93,7 +100,7 @@ export default function FilterBar({
             label="Institution"
             onSelect={(v) => update("institution", v)}
             selectedValue={filter.institution}
-            options={toOptions(institutions, "All Institutions")}
+            options={toOptionsWithCode(institutions, "All Institutions")}
             placeholder="All Institutions"
             className="w-full min-w-[140px] max-w-[140px]"
             buttonClassName="w-full min-w-[140px] max-w-[140px] px-3 py-2 text-sm"
@@ -104,7 +111,7 @@ export default function FilterBar({
             label="Batch"
             onSelect={(v) => update("batch", v)}
             selectedValue={filter.batch}
-            options={toOptions(batches, "All Batches")}
+            options={toOptionsWithCode(batches, "All Batches")}
             placeholder="All Batches"
             className="w-full min-w-[140px] max-w-[140px]"
             buttonClassName="w-full min-w-[140px] max-w-[140px] px-3 py-2 text-sm"
