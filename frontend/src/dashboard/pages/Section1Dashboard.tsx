@@ -26,15 +26,18 @@ export default function Section1Dashboard() {
     setError(null);
     const defaultInstitution = filter.institution || institutionOptions[0];
     const defaultBatch = filter.batch || batchOptions[0];
-    const defaultSection = filter.class || sectionOptions[0];
-    const defaultExamType = filter.examType || "Weekly";
-    const defaultSubject = filter.subject || "Physics";
+    // const defaultSection = filter.class || sectionOptions[0];
+    // const defaultExamType = filter.examType || "Weekly";
+    // const defaultSubject = filter.subject || "Physics";
+    const defaultSection = "D85"
+    const defaultExamType = ""
+    const defaultSubject = ""
     fetchDashboardAllMetrics({
       institution: defaultInstitution,
       batch: defaultBatch,
-      section: defaultSection,
-      examType: defaultExamType,
-      subject: defaultSubject,
+      // section: defaultSection,
+      // examType: defaultExamType,
+      // subject: defaultSubject,
     })
       .then((data) => setDashboardData(data))
       .catch(() => setError("Failed to fetch dashboard data"))
@@ -100,8 +103,8 @@ export default function Section1Dashboard() {
   ];
 
   // Top 10 performers
-  const top10Performers = overallPerformance.map((perf: any, i: number) => ({
-    id: i + 1,
+  const top10Performers = overallPerformance.map((perf: any) => ({
+    id: perf.rank,
     name: perf.name,
     section: perf.section,
     score: perf.overall_score,
